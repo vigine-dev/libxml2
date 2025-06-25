@@ -7502,9 +7502,7 @@ xmlHashTablePtr processedReferences;
 static
 void xmlRelaxNGDumpDefineCallback(void * define, void* output, const xmlChar* name)
 {
-    xmlChar key[64];
-    snprintf((char *)&key, sizeof(key), "%p", (void *)define);
-    xmlHashRemoveEntry(referencesToBeProcessed, key, NULL);
+    xmlHashRemoveEntry(referencesToBeProcessed, name, NULL);
     xmlRelaxNGDumpDefine((FILE *) output, (xmlRelaxNGDefinePtr) define);
 }
 
