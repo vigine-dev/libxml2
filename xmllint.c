@@ -3067,6 +3067,7 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
 #endif /* LIBXML_READER_ENABLED */
 	) {
 	xmlRelaxNGParserCtxtPtr ctxt;
+        FILE* relngdump;
 
         /* forces loading the DTDs */
 	lint->parseOptions |= XML_PARSE_DTDLOAD;
@@ -3080,7 +3081,7 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
         }
         xmlRelaxNGSetResourceLoader(ctxt, xmllintResourceLoader, lint);
 	lint->relaxngschemas = xmlRelaxNGParse(ctxt);
-        FILE * relngdump = fopen("relngdump.xml", "w+");
+        relngdump = fopen("relngdump.xml", "w+");
         xmlRelaxNGDump(relngdump, lint->relaxngschemas);
         fclose(relngdump);
 	xmlRelaxNGFreeParserCtxt(ctxt);
