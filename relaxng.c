@@ -7499,10 +7499,11 @@ xmlRelaxNGDumpDefines(FILE * output, xmlRelaxNGDefinePtr defines)
 xmlHashTablePtr referencesToBeProcessed;
 xmlHashTablePtr processedReferences;
 
+static
 void xmlRelaxNGDumpDefineCallback(void * define, void* output, const xmlChar* name)
 {
     xmlChar key[64];
-    snprintf(key, sizeof(key), "%p", (void *)define);
+    snprintf((char *)&key, sizeof(key), "%p", (void *)define);
     xmlHashRemoveEntry(referencesToBeProcessed, key, NULL);
     xmlRelaxNGDumpDefine((FILE *) output, (xmlRelaxNGDefinePtr) define);
 }
@@ -7590,7 +7591,7 @@ xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
                 referencesToBeProcessed = xmlHashCreate(100);
                 processedReferences = xmlHashCreate(100);
             }
-            snprintf(key, sizeof(key), "%p", (void*)define);
+            snprintf((char*) &key, sizeof(key), "%p", (void*)define);
             xmlHashAddEntry(processedReferences, key, define);
             fprintf(output, "<define");
             if (define->name != NULL)
@@ -7609,7 +7610,7 @@ xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
                 referencesToBeProcessed = xmlHashCreate(100);
                 processedReferences = xmlHashCreate(100);
             }
-            snprintf(key, sizeof(key), "%p", (void*)define->content);
+            snprintf((char*)&key, sizeof(key), "%p", (void*)define->content);
             if (xmlHashLookup(processedReferences, key) != NULL) {
                     fprintf(output, "<!-- already processed -->\n");
             } else {
