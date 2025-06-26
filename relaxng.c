@@ -7579,6 +7579,8 @@ xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
             fprintf(output, "<attribute");
             if (define->name != NULL)
                 fprintf(output, " name=\"%s\"", define->name);
+            if (define->ns != NULL && define->ns[0] != NULL)
+                fprintf(output, " ns=\"%s\"", define->ns);
             fprintf(output, ">\n");
             xmlRelaxNGDumpDefines(output, define->content);
             fprintf(output, "</attribute>\n");
@@ -7657,11 +7659,6 @@ xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
             break;
         case XML_RELAXNG_START:
             xmlRelaxNGDumpDefines(output, define->content);
-            while (referencesToBeProcessed != NULL &&
-                    xmlHashSize(referencesToBeProcessed) > 0) {
-                xmlHashScan(referencesToBeProcessed,
-                            xmlRelaxNGDumpDefineCallback, output);
-            }
             break;
     }
 }
@@ -7704,6 +7701,11 @@ xmlRelaxNGDumpGrammar(FILE * output, xmlRelaxNGGrammarPtr grammar, int top)
         xmlRelaxNGDumpDefine(output, grammar->start);
         fprintf(output, "</start>\n");
     }
+    while (referencesToBeProcessed != NULL &&
+        xmlHashSize(referencesToBeProcessed) > 0) {
+        xmlHashScan(referencesToBeProcessed,
+            xmlRelaxNGDumpDefineCallback, output);
+    }
     /* TODO ? Dump the defines ? */
     fprintf(output, "</grammar>\n");
     if (referencesToBeProcessed != NULL ||
@@ -7728,13 +7730,13 @@ xmlRelaxNGDump(FILE * output, xmlRelaxNG *schema)
         fprintf(output, "RelaxNG empty or failed to compile\n");
         return;
     }
-    fprintf(output, "RelaxNG: ");
+    fprintf(output, "<!-- RelaxNG: ");
     if (schema->doc == NULL) {
-        fprintf(output, "no document\n");
+        fprintf(output, "no document -->\n");
     } else if (schema->doc->URL != NULL) {
-        fprintf(output, "%s\n", schema->doc->URL);
+        fprintf(output, "%s -->\n", schema->doc->URL);
     } else {
-        fprintf(output, "\n");
+        fprintf(output, " -->\n");
     }
     if (schema->topgrammar == NULL) {
         fprintf(output, "RelaxNG has no top grammar\n");
