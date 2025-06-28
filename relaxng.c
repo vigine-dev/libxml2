@@ -7663,6 +7663,23 @@ xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
     }
 }
 
+static void
+xmlRelaxNGDumpReferencedDefines(FILE * output)
+{
+    while (referencesToBeProcessed != NULL &&
+        xmlHashSize(referencesToBeProcessed) > 0) {
+        xmlHashScan(referencesToBeProcessed,
+            xmlRelaxNGDumpDefineCallback, output);
+    }
+    if (referencesToBeProcessed != NULL ||
+        processedReferences != NULL) {
+        xmlHashFree(referencesToBeProcessed, NULL);
+        xmlHashFree(processedReferences, NULL);
+        referencesToBeProcessed = NULL;
+        processedReferences = NULL;
+    }
+}
+
 /**
  * Dump a RelaxNG structure back
  *
@@ -7701,18 +7718,8 @@ xmlRelaxNGDumpGrammar(FILE * output, xmlRelaxNGGrammarPtr grammar, int top)
         xmlRelaxNGDumpDefine(output, grammar->start);
         fprintf(output, "</start>\n");
     }
-    while (referencesToBeProcessed != NULL &&
-        xmlHashSize(referencesToBeProcessed) > 0) {
-        xmlHashScan(referencesToBeProcessed,
-            xmlRelaxNGDumpDefineCallback, output);
-    }
-    /* TODO ? Dump the defines ? */
+    xmlRelaxNGDumpReferencedDefines(output);
     fprintf(output, "</grammar>\n");
-    if (referencesToBeProcessed != NULL ||
-        processedReferences != NULL) {
-       xmlHashFree(referencesToBeProcessed, NULL);
-       xmlHashFree(processedReferences, NULL);
-    }
 }
 
 /**
