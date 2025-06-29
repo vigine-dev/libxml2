@@ -7579,7 +7579,7 @@ xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
             fprintf(output, "<attribute");
             if (define->name != NULL)
                 fprintf(output, " name=\"%s\"", define->name);
-            if (define->ns != NULL && define->ns[0] != NULL)
+            if (define->ns != NULL && define->ns[0] != 0)
                 fprintf(output, " ns=\"%s\"", define->ns);
             fprintf(output, ">\n");
             xmlRelaxNGDumpDefines(output, define->content);
