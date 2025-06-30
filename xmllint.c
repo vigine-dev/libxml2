@@ -3067,7 +3067,7 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
 #endif /* LIBXML_READER_ENABLED */
 	) {
 	xmlRelaxNGParserCtxtPtr ctxt;
-        FILE* relngdump;
+        /*FILE* relngdump;*/
 
         /* forces loading the DTDs */
 	lint->parseOptions |= XML_PARSE_DTDLOAD;
@@ -3081,9 +3081,12 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
         }
         xmlRelaxNGSetResourceLoader(ctxt, xmllintResourceLoader, lint);
 	lint->relaxngschemas = xmlRelaxNGParse(ctxt);
-        relngdump = fopen("relngdump.xml", "w+");
+        /*
+         * Dump the simplified Relax-NG schema to a file for debugging purposes.
+         * Add a command line option to enable this?
+        relngdump = fopen("relngdump.rng", "w+");
         xmlRelaxNGDump(relngdump, lint->relaxngschemas);
-        fclose(relngdump);
+        fclose(relngdump);*/
 	xmlRelaxNGFreeParserCtxt(ctxt);
 	if (lint->relaxngschemas == NULL) {
 	    fprintf(errStream, "Relax-NG schema %s failed to compile\n",
