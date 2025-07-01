@@ -380,6 +380,18 @@ struct _xmlRelaxNGDocument {
     int externalRef;            /* 1 if an external ref */
 };
 
+/**
+ * Context needed for resolving refs and defines for dumping a RelaxNGs schema
+ * CoPilot suggested to use xmlHashTable to keep track of
+ * processed references and references to be processed.
+ */
+typedef struct _xmlRelaxNGRefScanCtxt {
+    xmlHashTable* neededDefines;       /* new defines found in this scan */
+    xmlHashTable* parentNeededDefines;  /* for removing processed defines */
+    xmlHashTable* processedDefines;    /* already processed defines */
+    FILE* output;              /* the output buffered io specified for the dump */
+} xmlRelaxNGRefScanCtxt;
+typedef xmlRelaxNGRefScanCtxt* xmlRelaxNGRefScanCtxtPtr;
 
 /************************************************************************
  *									*
@@ -7473,210 +7485,249 @@ xmlRelaxNGSetResourceLoader(xmlRelaxNGParserCtxt *ctxt,
  *			Dump back a compiled form			*
  *									*
  ************************************************************************/
-static void xmlRelaxNGDumpDefine(FILE * output,
+static void xmlRelaxNGDumpDefine(xmlRelaxNGRefScanCtxt* ctxt,
                                  xmlRelaxNGDefinePtr define);
 
 /**
  * Dump a RelaxNG structure back
  *
- * @param output  the file output
+ * @param ctxt  the context that needs to be passed on
  * @param defines  a list of define structures
  */
 static void
-xmlRelaxNGDumpDefines(FILE * output, xmlRelaxNGDefinePtr defines)
+xmlRelaxNGDumpDefines(xmlRelaxNGRefScanCtxt* ctxt, xmlRelaxNGDefinePtr defines)
 {
     while (defines != NULL) {
-        xmlRelaxNGDumpDefine(output, defines);
+        xmlRelaxNGDumpDefine(ctxt, defines);
         defines = defines->next;
     }
 }
 
-/*
- * CoPilot suggested to use xmlHashTable to keep track of
- * processed references and references to be processed.
- */
+static xmlRelaxNGRefScanCtxtPtr
+xmlRelaxNGNewRefScanCtxt(FILE* output)
+{
+    xmlRelaxNGRefScanCtxtPtr refScanCtxt = NULL;
+    refScanCtxt =
+        (xmlRelaxNGRefScanCtxtPtr)xmlMalloc(sizeof(xmlRelaxNGRefScanCtxt));
+    if (refScanCtxt == NULL) {
+        xmlRngPErrMemory(NULL);
+        return refScanCtxt;
+    }
+    memset(refScanCtxt, 0, sizeof(xmlRelaxNGRefScanCtxt));
+    refScanCtxt->output = output;
+    return refScanCtxt;
+}
 
-xmlHashTablePtr referencesToBeProcessed;
-xmlHashTablePtr processedReferences;
+static void
+xmlRelaxNGFreeRefScanCtxt(xmlRelaxNGRefScanCtxtPtr ctxt)
+{
+    if (ctxt == NULL)
+        return;
+    if (ctxt->neededDefines != NULL)
+        xmlHashFree(ctxt->neededDefines, NULL);
+    if (ctxt->processedDefines != NULL)
+        xmlHashFree(ctxt->processedDefines, NULL);
+    xmlFree(ctxt);
+}
 
 static
-void xmlRelaxNGDumpDefineCallback(void * define, void* output, const xmlChar* name)
+void xmlRelaxNGAddNeededDefines(void* _define, void* _ctxt, const xmlChar* defineName)
 {
-    xmlHashRemoveEntry(referencesToBeProcessed, name, NULL);
-    xmlRelaxNGDumpDefine((FILE *) output, (xmlRelaxNGDefinePtr) define);
+    xmlRelaxNGRefScanCtxtPtr ctxt = (xmlRelaxNGRefScanCtxtPtr)_ctxt;
+    xmlRelaxNGDefinePtr define = (xmlRelaxNGDefinePtr)_define;
+    xmlHashAddEntry(ctxt->neededDefines, defineName, define);
+}
+
+static
+void xmlRelaxNGDumpDefineCallback(void * define, void * _ctxt, const xmlChar* defineName)
+{
+    xmlRelaxNGRefScanCtxtPtr ctxt = (xmlRelaxNGRefScanCtxtPtr)_ctxt;
+
+    xmlRelaxNGDumpDefine(ctxt, (xmlRelaxNGDefinePtr)define);
+    xmlHashRemoveEntry(ctxt->parentNeededDefines, defineName, NULL);
 }
 
 /**
  * Dump a RelaxNG structure back
  *
- * @param output  the file output
+ * @param ctxt  the context that needs to be passed on
  * @param define  a define structure
  */
 static void
-xmlRelaxNGDumpDefine(FILE * output, xmlRelaxNGDefinePtr define)
+xmlRelaxNGDumpDefine(xmlRelaxNGRefScanCtxt * ctxt, xmlRelaxNGDefinePtr define)
 {
-    xmlChar key[64];
     if (define == NULL)
         return;
     switch (define->type) {
         case XML_RELAXNG_EMPTY:
-            fprintf(output, "<empty/>\n");
+            fprintf(ctxt->output, "<empty/>\n");
             break;
         case XML_RELAXNG_NOT_ALLOWED:
-            fprintf(output, "<notAllowed/>\n");
+            fprintf(ctxt->output, "<notAllowed/>\n");
             break;
         case XML_RELAXNG_TEXT:
-            fprintf(output, "<text/>\n");
+            fprintf(ctxt->output, "<text/>\n");
             break;
         case XML_RELAXNG_ELEMENT:
-            fprintf(output, "<element>\n");
+            fprintf(ctxt->output, "<element>\n");
             if (define->name != NULL) {
-                fprintf(output, "<name");
+                fprintf(ctxt->output, "<name");
                 if (define->ns != NULL)
-                    fprintf(output, " ns=\"%s\"", define->ns);
-                fprintf(output, ">%s</name>\n", define->name);
+                    fprintf(ctxt->output, " ns=\"%s\"", define->ns);
+                fprintf(ctxt->output, ">%s</name>\n", define->name);
             }
-            xmlRelaxNGDumpDefines(output, define->attrs);
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</element>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->attrs);
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</element>\n");
             break;
         case XML_RELAXNG_LIST:
-            fprintf(output, "<list>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</list>\n");
+            fprintf(ctxt->output, "<list>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</list>\n");
             break;
         case XML_RELAXNG_ONEORMORE:
-            fprintf(output, "<oneOrMore>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</oneOrMore>\n");
+            fprintf(ctxt->output, "<oneOrMore>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</oneOrMore>\n");
             break;
         case XML_RELAXNG_ZEROORMORE:
-            fprintf(output, "<zeroOrMore>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</zeroOrMore>\n");
+            fprintf(ctxt->output, "<zeroOrMore>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</zeroOrMore>\n");
             break;
         case XML_RELAXNG_CHOICE:
-            fprintf(output, "<choice>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</choice>\n");
+            fprintf(ctxt->output, "<choice>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</choice>\n");
             break;
         case XML_RELAXNG_GROUP:
-            fprintf(output, "<group>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</group>\n");
+            fprintf(ctxt->output, "<group>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</group>\n");
             break;
         case XML_RELAXNG_INTERLEAVE:
-            fprintf(output, "<interleave>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</interleave>\n");
+            fprintf(ctxt->output, "<interleave>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</interleave>\n");
             break;
         case XML_RELAXNG_OPTIONAL:
-            fprintf(output, "<optional>\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</optional>\n");
+            fprintf(ctxt->output, "<optional>\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</optional>\n");
             break;
         case XML_RELAXNG_ATTRIBUTE:
-            fprintf(output, "<attribute");
+            fprintf(ctxt->output, "<attribute");
             if (define->name != NULL)
-                fprintf(output, " name=\"%s\"", define->name);
+                fprintf(ctxt->output, " name=\"%s\"", define->name);
             if (define->ns != NULL && define->ns[0] != 0)
-                fprintf(output, " ns=\"%s\"", define->ns);
-            fprintf(output, ">\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</attribute>\n");
+                fprintf(ctxt->output, " ns=\"%s\"", define->ns);
+            fprintf(ctxt->output, ">\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</attribute>\n");
             break;
         case XML_RELAXNG_DEF:
-            if (referencesToBeProcessed == NULL ||
-                processedReferences == NULL) {
-                referencesToBeProcessed = xmlHashCreate(100);
-                processedReferences = xmlHashCreate(100);
+            if (ctxt->neededDefines == NULL ||
+                ctxt->processedDefines == NULL) {
+                ctxt->neededDefines = xmlHashCreate(10);
+                ctxt->processedDefines = xmlHashCreate(10);
             }
-            snprintf((char*) &key, sizeof(key), "%p", (void*)define);
-            xmlHashAddEntry(processedReferences, key, define);
-            fprintf(output, "<define");
+            xmlHashAddEntry(ctxt->processedDefines, define->name, define);
+            fprintf(ctxt->output, "<define");
             if (define->name != NULL)
-                fprintf(output, " name=\"%s\"", define->name);
-            fprintf(output, ">\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</define>\n");
+                fprintf(ctxt->output, " name=\"%s\"", define->name);
+            fprintf(ctxt->output, ">\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</define>\n");
             break;
         case XML_RELAXNG_REF:
-            fprintf(output, "<ref");
+            fprintf(ctxt->output, "<ref");
             if (define->name != NULL)
-                fprintf(output, " name=\"%s\"", define->name);
-            fprintf(output, "/>\n");
-            if (referencesToBeProcessed == NULL ||
-                processedReferences == NULL) {
-                referencesToBeProcessed = xmlHashCreate(100);
-                processedReferences = xmlHashCreate(100);
+                fprintf(ctxt->output, " name=\"%s\"", define->name);
+            fprintf(ctxt->output, "/>\n");
+            if (ctxt->neededDefines == NULL ||
+                ctxt->processedDefines == NULL) {
+                ctxt->neededDefines = xmlHashCreate(10);
+                ctxt->processedDefines = xmlHashCreate(10);
             }
-            snprintf((char*)&key, sizeof(key), "%p", (void*)define->content);
-            if (xmlHashLookup(processedReferences, key) != NULL) {
-                    fprintf(output, "<!-- already processed -->\n");
+            if (xmlHashLookup(ctxt->processedDefines, define->name) != NULL) {
+                fprintf(ctxt->output, "<!-- already processed -->\n");
             } else {
-                    xmlHashAddEntry(referencesToBeProcessed, key, define->content);
+                xmlHashAddEntry(ctxt->neededDefines, define->content->name, define->content);
             }
             break;
         case XML_RELAXNG_PARENTREF:
-            fprintf(output, "<parentRef");
+            fprintf(ctxt->output, "<parentRef");
             if (define->name != NULL)
-                fprintf(output, " name=\"%s\"", define->name);
-            fprintf(output, ">\n");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</parentRef>\n");
+                fprintf(ctxt->output, " name=\"%s\"", define->name);
+            fprintf(ctxt->output, ">\n");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</parentRef>\n");
             break;
         case XML_RELAXNG_EXTERNALREF:
-            fprintf(output, "<externalRef>");
-            xmlRelaxNGDumpDefines(output, define->content);
-            fprintf(output, "</externalRef>\n");
+            fprintf(ctxt->output, "<externalRef>");
+            xmlRelaxNGDumpDefines(ctxt, define->content);
+            fprintf(ctxt->output, "</externalRef>\n");
             break;
         case XML_RELAXNG_VALUE:
-            fprintf(output, "<value>");
-            fprintf(output, "%s", define->value);
-            fprintf(output, "</value>\n");
+            fprintf(ctxt->output, "<value>");
+            fprintf(ctxt->output, "%s", define->value);
+            fprintf(ctxt->output, "</value>\n");
             break;
         case XML_RELAXNG_DATATYPE:
-            fprintf(output, "<data");
+            fprintf(ctxt->output, "<data");
             if (define->name != NULL)
-                fprintf(output, " type=\"%s\"", define->name);
-            fprintf(output, ">\n");
-            xmlRelaxNGDumpDefines(output, define->attrs);
-            fprintf(output, "</data>\n");
+                fprintf(ctxt->output, " type=\"%s\"", define->name);
+            fprintf(ctxt->output, ">\n");
+            xmlRelaxNGDumpDefines(ctxt, define->attrs);
+            fprintf(ctxt->output, "</data>\n");
             break;
         case XML_RELAXNG_PARAM:
-            fprintf(output, "<param");
+            fprintf(ctxt->output, "<param");
             if (define->name != NULL)
-                fprintf(output, " name=\"%s\"", define->name);
-            fprintf(output, ">");
-            fprintf(output, "%s", define->value);
-            fprintf(output, "</param>\n");
+                fprintf(ctxt->output, " name=\"%s\"", define->name);
+            fprintf(ctxt->output, ">");
+            fprintf(ctxt->output, "%s", define->value);
+            fprintf(ctxt->output, "</param>\n");
             break;
         case XML_RELAXNG_EXCEPT:
             /* TODO */
             break;
         case XML_RELAXNG_NOOP:
-            xmlRelaxNGDumpDefines(output, define->content);
+            xmlRelaxNGDumpDefines(ctxt, define->content);
             break;
         case XML_RELAXNG_START:
-            xmlRelaxNGDumpDefines(output, define->content);
+            xmlRelaxNGDumpDefines(ctxt, define->content);
             break;
     }
 }
 
 static void
-xmlRelaxNGDumpReferencedDefines(FILE * output)
+xmlRelaxNGDumpReferencedDefines(xmlRelaxNGRefScanCtxtPtr ctxt)
 {
-    while (referencesToBeProcessed != NULL &&
-        xmlHashSize(referencesToBeProcessed) > 0) {
-        xmlHashScan(referencesToBeProcessed,
-            xmlRelaxNGDumpDefineCallback, output);
+    while (ctxt->neededDefines!= NULL &&
+        xmlHashSize(ctxt->neededDefines) > 0) {
+
+        xmlRelaxNGRefScanCtxtPtr subCtxt = NULL;
+
+        subCtxt = xmlRelaxNGNewRefScanCtxt(ctxt->output);
+        subCtxt->processedDefines = ctxt->processedDefines;
+        subCtxt->parentNeededDefines = ctxt->neededDefines;
+        subCtxt->neededDefines = xmlHashCreate(10);
+
+        xmlHashScan(ctxt->neededDefines,
+            xmlRelaxNGDumpDefineCallback, subCtxt);
+
+        xmlHashScan(subCtxt->neededDefines,
+            xmlRelaxNGAddNeededDefines, ctxt);
+        subCtxt->processedDefines = NULL;
+        xmlRelaxNGFreeRefScanCtxt(subCtxt);
     }
-    if (referencesToBeProcessed != NULL ||
-        processedReferences != NULL) {
-        xmlHashFree(referencesToBeProcessed, NULL);
-        xmlHashFree(processedReferences, NULL);
-        referencesToBeProcessed = NULL;
-        processedReferences = NULL;
+    if (ctxt->neededDefines != NULL ||
+        ctxt->processedDefines != NULL) {
+        xmlHashFree(ctxt->neededDefines, NULL);
+        xmlHashFree(ctxt->processedDefines, NULL);
+        ctxt->neededDefines = NULL;
+        ctxt->processedDefines = NULL;
     }
 }
 
@@ -7690,8 +7741,11 @@ xmlRelaxNGDumpReferencedDefines(FILE * output)
 static void
 xmlRelaxNGDumpGrammar(FILE * output, xmlRelaxNGGrammarPtr grammar, int top)
 {
+    xmlRelaxNGRefScanCtxtPtr ctxt = NULL;
     if (grammar == NULL)
         return;
+
+    ctxt = xmlRelaxNGNewRefScanCtxt(output);
 
     fprintf(output, "<grammar");
     if (top)
@@ -7708,18 +7762,19 @@ xmlRelaxNGDumpGrammar(FILE * output, xmlRelaxNGGrammarPtr grammar, int top)
         default:
             fprintf(output, " <!-- invalid combine value -->");
     }
-    referencesToBeProcessed = NULL;
-    processedReferences = NULL;
+
     fprintf(output, ">\n");
     if (grammar->start == NULL) {
         fprintf(output, " <!-- grammar had no start -->");
     } else {
         fprintf(output, "<start>\n");
-        xmlRelaxNGDumpDefine(output, grammar->start);
+        xmlRelaxNGDumpDefine(ctxt, grammar->start);
         fprintf(output, "</start>\n");
     }
-    xmlRelaxNGDumpReferencedDefines(output);
+    xmlRelaxNGDumpReferencedDefines(ctxt);
     fprintf(output, "</grammar>\n");
+
+    xmlRelaxNGFreeRefScanCtxt(ctxt);
 }
 
 /**
