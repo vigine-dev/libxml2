@@ -3081,6 +3081,7 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
         }
         xmlRelaxNGSetResourceLoader(ctxt, xmllintResourceLoader, lint);
 	lint->relaxngschemas = xmlRelaxNGParse(ctxt);
+#ifdef LIBXML_DEBUG_ENABLED
         if (lint->appOptions & XML_LINT_DEBUG_ENABLED) {
             /*
              * Dump the simplified Relax-NG schema to a file for debugging purposes.
@@ -3089,6 +3090,7 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
             xmlRelaxNGDump(relngdump, lint->relaxngschemas);
             /*fclose(relngdump);*/
         }
+#endif /* LIBXML_DEBUG_ENABLED */
 	xmlRelaxNGFreeParserCtxt(ctxt);
 	if (lint->relaxngschemas == NULL) {
 	    fprintf(errStream, "Relax-NG schema %s failed to compile\n",
