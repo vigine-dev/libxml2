@@ -143,6 +143,29 @@ xmlSaveSetIndentString(xmlSaveCtxt *ctxt, const char *indent) {
 }
 
 /**
+ * Sets the indent level.
+ *
+ * @since 2.16.0
+ *
+ * @param ctxt  save context
+ * @param level  indent level
+ * @returns old indentation level (a non-negative value) on success,
+ * -1 if the indent level is negative or too big.
+ */
+int
+xmlSaveSetIndentLevel(xmlSaveCtxt *ctxt, int level) {
+    int old;
+
+    if ((ctxt == NULL) || (level < 0) || (level > MAX_INDENT))
+        return(-1);
+
+    old = ctxt->level;
+    ctxt->level = level;
+
+    return(old);
+}
+
+/**
  * Initialize a saving context
  *
  * @param ctxt  the saving context
