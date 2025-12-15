@@ -87,16 +87,9 @@ typedef xmlSAXHandler *xmlSAXHandlerPtr;
 typedef struct _xmlEntity xmlEntity;
 typedef xmlEntity *xmlEntityPtr;
 
-/**
- * Removed, buffers always use XML_BUFFER_ALLOC_IO now.
- */
+/** @todo Remove this. Retained for backward compatibility. */
 typedef enum {
-    XML_BUFFER_ALLOC_DOUBLEIT,	/* double each time one need to grow */
-    XML_BUFFER_ALLOC_EXACT,	/* grow only to the minimal size */
-    XML_BUFFER_ALLOC_IMMUTABLE, /* immutable buffer, deprecated */
-    XML_BUFFER_ALLOC_IO,	/* special allocation scheme used for I/O */
-    XML_BUFFER_ALLOC_HYBRID,	/* exact up to a threshold, and doubleit thereafter */
-    XML_BUFFER_ALLOC_BOUNDED	/* limit the upper size of the buffer */
+    XML_BUFFER_ALLOC_DOUBLEIT
 } xmlBufferAllocationScheme;
 
 /** Buffer type */
@@ -121,8 +114,6 @@ struct _xmlBuffer {
     unsigned int use XML_DEPRECATED_MEMBER;
     /* The buffer size */
     unsigned int size XML_DEPRECATED_MEMBER;
-    /* The realloc method */
-    xmlBufferAllocationScheme alloc XML_DEPRECATED_MEMBER;
     /* in IO mode we may have a different base */
     xmlChar *contentIO XML_DEPRECATED_MEMBER;
 };
@@ -1490,14 +1481,6 @@ XMLPUBFUN xmlDeregisterNodeFunc
 /*
  * Handling Buffers, the old ones see `xmlBuf` for the new ones.
  */
-
-XML_DEPRECATED
-XMLPUBFUN void
-		xmlSetBufferAllocationScheme(xmlBufferAllocationScheme scheme);
-XML_DEPRECATED
-XMLPUBFUN xmlBufferAllocationScheme
-		xmlGetBufferAllocationScheme(void);
-
 XMLPUBFUN xmlBuffer *
 		xmlBufferCreate		(void);
 XMLPUBFUN xmlBuffer *
@@ -1542,9 +1525,11 @@ XMLPUBFUN const xmlChar*
 		xmlBufferContent	(const xmlBuffer *buf);
 XMLPUBFUN xmlChar*
 		xmlBufferDetach         (xmlBuffer *buf);
+
+/** @todo Remove this. Retained for backward compatibility. */
 XMLPUBFUN void
-		xmlBufferSetAllocationScheme(xmlBuffer *buf,
-					 xmlBufferAllocationScheme scheme);
+xmlBufferSetAllocationScheme(xmlBuffer *buf,
+                             xmlBufferAllocationScheme scheme);
 XMLPUBFUN int
 		xmlBufferLength		(const xmlBuffer *buf);
 XMLPUBFUN void
