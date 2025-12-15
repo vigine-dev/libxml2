@@ -1864,7 +1864,7 @@ xmlResolvePath(const xmlChar *escRef, const xmlChar *base, xmlChar **out) {
     xmlChar *ref = NULL;
     xmlChar *result = NULL;
     int ret = -1;
-    int i;
+    size_t i;
 
     if (out == NULL)
         return(1);
@@ -1914,7 +1914,7 @@ xmlResolvePath(const xmlChar *escRef, const xmlChar *base, xmlChar **out) {
      * Concatenate base and ref
      */
     if (i > 0) {
-        int refLen = xmlStrlen(ref);
+        size_t refLen = xmlStrlen(ref);
 
         result = xmlMalloc(i + refLen + 1);
         if (result == NULL)
@@ -2493,7 +2493,7 @@ xmlBuildRelativeURISafe(const xmlChar * URI, const xmlChar * base,
     int ret = 0;
     int ix;
     int nbslash = 0;
-    int len;
+    size_t len;
     xmlURIPtr ref = NULL;
     xmlURIPtr bas = NULL;
     const xmlChar *bptr, *uptr, *rptr;

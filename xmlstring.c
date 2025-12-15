@@ -47,11 +47,11 @@
  * @returns a new xmlChar * or NULL
  */
 xmlChar *
-xmlStrndup(const xmlChar *cur, int len) {
+xmlStrndup(const xmlChar *cur, size_t len) {
     xmlChar *ret;
 
-    if ((cur == NULL) || (len < 0)) return(NULL);
-    ret = xmlMalloc((size_t) len + 1);
+    if ((cur == NULL) || (len > INT_MAX)) return(NULL);
+    ret = xmlMalloc(len + 1);
     if (ret == NULL) {
         return(NULL);
     }
@@ -86,12 +86,12 @@ xmlStrdup(const xmlChar *cur) {
  */
 
 xmlChar *
-xmlCharStrndup(const char *cur, int len) {
+xmlCharStrndup(const char *cur, size_t len) {
     int i;
     xmlChar *ret;
 
-    if ((cur == NULL) || (len < 0)) return(NULL);
-    ret = xmlMalloc((size_t) len + 1);
+    if (cur == NULL) return(NULL);
+    ret = xmlMalloc(len + 1);
     if (ret == NULL) {
         return(NULL);
     }
@@ -203,7 +203,7 @@ xmlStrQEqual(const xmlChar *pref, const xmlChar *name, const xmlChar *str) {
  */
 
 int
-xmlStrncmp(const xmlChar *str1, const xmlChar *str2, int len) {
+xmlStrncmp(const xmlChar *str1, const xmlChar *str2, size_t len) {
     if (len <= 0) return(0);
     if (str1 == str2) return(0);
     if (str1 == NULL) return(-1);
@@ -286,7 +286,7 @@ xmlStrcasecmp(const xmlChar *str1, const xmlChar *str2) {
  */
 
 int
-xmlStrncasecmp(const xmlChar *str1, const xmlChar *str2, int len) {
+xmlStrncasecmp(const xmlChar *str1, const xmlChar *str2, size_t len) {
     register int tmp;
 
     if (len <= 0) return(0);
@@ -328,7 +328,7 @@ xmlStrchr(const xmlChar *str, xmlChar val) {
 
 const xmlChar *
 xmlStrstr(const xmlChar *str, const xmlChar *val) {
-    int n;
+    size_t n;
 
     if (str == NULL) return(NULL);
     if (val == NULL) return(NULL);
@@ -354,7 +354,7 @@ xmlStrstr(const xmlChar *str, const xmlChar *val) {
 
 const xmlChar *
 xmlStrcasestr(const xmlChar *str, const xmlChar *val) {
-    int n;
+    size_t n;
 
     if (str == NULL) return(NULL);
     if (val == NULL) return(NULL);
@@ -379,12 +379,11 @@ xmlStrcasestr(const xmlChar *str, const xmlChar *val) {
  */
 
 xmlChar *
-xmlStrsub(const xmlChar *str, int start, int len) {
+xmlStrsub(const xmlChar *str, int start, size_t len) {
     int i;
 
     if (str == NULL) return(NULL);
     if (start < 0) return(NULL);
-    if (len < 0) return(NULL);
 
     for (i = 0;i < start;i++) {
         if (*str == 0) return(NULL);
@@ -401,10 +400,11 @@ xmlStrsub(const xmlChar *str, int start, int len) {
  * @returns the number of xmlChar contained in the ARRAY.
  */
 
-int
+size_t
 xmlStrlen(const xmlChar *str) {
-    size_t len = str ? strlen((const char *)str) : 0;
-    return(len > INT_MAX ? 0 : len);
+    if (str == NULL)
+        return(0);
+    return(strlen((const char *)str));
 }
 
 /**
@@ -420,21 +420,20 @@ xmlStrlen(const xmlChar *str) {
  */
 
 xmlChar *
-xmlStrncat(xmlChar *cur, const xmlChar *add, int len) {
-    int size;
+xmlStrncat(xmlChar *cur, const xmlChar *add, size_t len) {
+    size_t size;
     xmlChar *ret;
 
     if ((add == NULL) || (len == 0))
         return(cur);
-    if (len < 0)
-	return(NULL);
+
     if (cur == NULL)
         return(xmlStrndup(add, len));
 
     size = xmlStrlen(cur);
-    if ((size < 0) || (size > INT_MAX - len))
+    if (size > INT_MAX - len)
         return(NULL);
-    ret = (xmlChar *) xmlRealloc(cur, (size_t) size + len + 1);
+    ret = (xmlChar *) xmlRealloc(cur, size + len + 1);
     if (ret == NULL) {
         xmlFree(cur);
         return(NULL);
@@ -455,8 +454,8 @@ xmlStrncat(xmlChar *cur, const xmlChar *add, int len) {
  * @returns a new xmlChar * or NULL
  */
 xmlChar *
-xmlStrncatNew(const xmlChar *str1, const xmlChar *str2, int len) {
-    int size;
+xmlStrncatNew(const xmlChar *str1, const xmlChar *str2, size_t len) {
+    size_t size;
     xmlChar *ret;
 
     if (len < 0) {
@@ -470,9 +469,9 @@ xmlStrncatNew(const xmlChar *str1, const xmlChar *str2, int len) {
         return(xmlStrdup(str1));
 
     size = xmlStrlen(str1);
-    if ((size < 0) || (size > INT_MAX - len))
+    if (size > INT_MAX - len)
         return(NULL);
-    ret = (xmlChar *) xmlMalloc((size_t) size + len + 1);
+    ret = (xmlChar *) xmlMalloc(size + len + 1);
     if (ret == NULL)
         return(NULL);
     memcpy(ret, str1, size);
@@ -513,7 +512,7 @@ xmlStrcat(xmlChar *cur, const xmlChar *add) {
  * @returns the number of characters written to `buf` or -1 if an error occurs.
  */
 int
-xmlStrPrintf(xmlChar *buf, int len, const char *msg, ...) {
+xmlStrPrintf(xmlChar *buf, size_t len, const char *msg, ...) {
     va_list args;
     int ret;
 
@@ -539,7 +538,7 @@ xmlStrPrintf(xmlChar *buf, int len, const char *msg, ...) {
  * @returns the number of characters written to `buf` or -1 if an error occurs.
  */
 int
-xmlStrVPrintf(xmlChar *buf, int len, const char *msg, va_list ap) {
+xmlStrVPrintf(xmlChar *buf, size_t len, const char *msg, va_list ap) {
     int ret;
 
     if((buf == NULL) || (msg == NULL)) {
@@ -788,7 +787,7 @@ xmlUTF8Strlen(const xmlChar *utf) {
         }
         ret++;
     }
-    return(ret > INT_MAX ? 0 : ret);
+    return(ret > INT_MAX ? -1 : ret);
 }
 
 /**
@@ -923,7 +922,7 @@ xmlCheckUTF8(const unsigned char *utf)
  */
 
 int
-xmlUTF8Strsize(const xmlChar *utf, int len) {
+xmlUTF8Strsize(const xmlChar *utf, size_t len) {
     const xmlChar *ptr=utf;
     int ch;
     size_t ret;
@@ -957,11 +956,11 @@ xmlUTF8Strsize(const xmlChar *utf, int len) {
  * @returns a new UTF8 * or NULL
  */
 xmlChar *
-xmlUTF8Strndup(const xmlChar *utf, int len) {
+xmlUTF8Strndup(const xmlChar *utf, size_t len) {
     xmlChar *ret;
     int i;
 
-    if ((utf == NULL) || (len < 0)) return(NULL);
+    if (utf == NULL) return(NULL);
     i = xmlUTF8Strsize(utf, len);
     ret = xmlMalloc((size_t) i + 1);
     if (ret == NULL) {
@@ -1050,13 +1049,12 @@ xmlUTF8Strloc(const xmlChar *utf, const xmlChar *utfchar) {
  */
 
 xmlChar *
-xmlUTF8Strsub(const xmlChar *utf, int start, int len) {
+xmlUTF8Strsub(const xmlChar *utf, int start, size_t len) {
     int i;
     int ch;
 
     if (utf == NULL) return(NULL);
     if (start < 0) return(NULL);
-    if (len < 0) return(NULL);
 
     /*
      * Skip over any leading chars

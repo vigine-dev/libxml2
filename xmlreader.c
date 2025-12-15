@@ -4990,7 +4990,7 @@ xmlTextReader *
 xmlReaderForDoc(const xmlChar * cur, const char *URL, const char *encoding,
                 int options)
 {
-    int len;
+    size_t len;
 
     if (cur == NULL)
         return (NULL);
@@ -5215,7 +5215,7 @@ xmlReaderNewDoc(xmlTextReader *reader, const xmlChar * cur,
                 const char *URL, const char *encoding, int options)
 {
 
-    int len;
+    size_t len;
 
     if (cur == NULL)
         return (-1);

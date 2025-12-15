@@ -1295,7 +1295,7 @@ xmlTextWriterWriteVFormatRaw(xmlTextWriter *writer, const char *format,
  */
 int
 xmlTextWriterWriteRawLen(xmlTextWriter *writer, const xmlChar * content,
-                         int len)
+                         size_t len)
 {
     int count;
     int sum;
@@ -1308,7 +1308,7 @@ xmlTextWriterWriteRawLen(xmlTextWriter *writer, const xmlChar * content,
         return -1;
     }
 
-    if ((content == NULL) || (len < 0)) {
+    if (content == NULL) {
         xmlWriterErrMsg(writer, XML_ERR_INTERNAL_ERROR,
                         "xmlTextWriterWriteRawLen : invalid content!\n");
         return -1;
@@ -2054,11 +2054,11 @@ xmlTextWriterWriteAttributeNS(xmlTextWriter *writer,
         return -1;
     sum += count;
     count = xmlTextWriterWriteString(writer, content);
-    if (count < 0)
+    if (count == -1)
         return -1;
     sum += count;
     count = xmlTextWriterEndAttribute(writer);
-    if (count < 0)
+    if (count == -1)
         return -1;
     sum += count;
 

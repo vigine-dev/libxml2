@@ -158,7 +158,7 @@ extern "C" {
 				     LIBXML_ATTR_FORMAT(2,0);
     XMLPUBFUN int
         xmlTextWriterWriteRawLen(xmlTextWriter *writer,
-                                 const xmlChar * content, int len);
+                                 const xmlChar * content, size_t len);
     XMLPUBFUN int
         xmlTextWriterWriteRaw(xmlTextWriter *writer,
                               const xmlChar * content);

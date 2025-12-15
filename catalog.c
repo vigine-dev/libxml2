@@ -1586,7 +1586,7 @@ xmlCatalogXMLResolve(xmlCatalogEntryPtr catal, const xmlChar *pubID,
      */
     if (sysID != NULL) {
 	xmlCatalogEntryPtr rewrite = NULL;
-	int lenrewrite = 0, len;
+	size_t lenrewrite = 0, len;
 	cur = catal;
 	haveDelegate = 0;
 	while (cur != NULL) {
@@ -1799,7 +1799,7 @@ xmlCatalogXMLResolveURI(xmlCatalogEntryPtr catal, const xmlChar *URI) {
     int haveDelegate = 0;
     int haveNext = 0;
     xmlCatalogEntryPtr rewrite = NULL;
-    int lenrewrite = 0, len;
+    size_t lenrewrite = 0, len;
 
     if (catal == NULL)
 	return(NULL);
