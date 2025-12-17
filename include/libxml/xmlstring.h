@@ -93,7 +93,7 @@ XMLPUBFUN xmlChar *
 XMLPUBFUN xmlChar *
                 xmlStrncatNew            (const xmlChar *str1,
                                          const xmlChar *str2,
-                                         size_t len);
+                                         int len);
 XMLPUBFUN int
                 xmlStrPrintf             (xmlChar *buf,
                                          size_t len,

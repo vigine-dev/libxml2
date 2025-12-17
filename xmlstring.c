@@ -459,24 +459,21 @@ xmlStrncat(xmlChar *cur, const xmlChar *add, size_t len) {
  * @returns a new xmlChar * or NULL
  */
 xmlChar *
-xmlStrncatNew(const xmlChar *str1, const xmlChar *str2, size_t len) {
-    size_t size;
+xmlStrncatNew(const xmlChar *str1, const xmlChar *str2, int len) {
+    int size;
     xmlChar *ret;
 
-    if (len < 0) {
+    if (len < 0)
         len = xmlStrlen(str2);
-        if (len < 0)
-            return(NULL);
-    }
     if (str1 == NULL)
         return(xmlStrndup(str2, len));
     if ((str2 == NULL) || (len == 0))
         return(xmlStrdup(str1));
 
     size = xmlStrlen(str1);
-    if (size > INT_MAX - len)
+    if ((size < 0) || (len < 0) || (size > INT_MAX - len))
         return(NULL);
-    ret = (xmlChar *) xmlMalloc(size + len + 1);
+    ret = (xmlChar *) xmlMalloc((size_t) size + len + 1);
     if (ret == NULL)
         return(NULL);
     memcpy(ret, str1, size);
