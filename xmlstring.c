@@ -431,7 +431,7 @@ xmlStrncat(xmlChar *cur, const xmlChar *add, size_t len) {
         return(xmlStrndup(add, len));
 
     size = xmlStrlen(cur);
-    if (size > INT_MAX - len)
+    if (size > SIZE_MAX - len - 1)
         return(NULL);
     ret = (xmlChar *) xmlRealloc(cur, size + len + 1);
     if (ret == NULL) {
