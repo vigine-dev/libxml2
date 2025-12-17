@@ -50,7 +50,7 @@ xmlChar *
 xmlStrndup(const xmlChar *cur, size_t len) {
     xmlChar *ret;
 
-    if ((cur == NULL) || (len > INT_MAX)) return(NULL);
+    if ((cur == NULL) || (len >= SIZE_MAX)) return(NULL);
     ret = xmlMalloc(len + 1);
     if (ret == NULL) {
         return(NULL);
