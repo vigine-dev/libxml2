@@ -400,11 +400,16 @@ xmlStrsub(const xmlChar *str, int start, size_t len) {
  * @returns the number of xmlChar contained in the ARRAY.
  */
 
-size_t
+int
 xmlStrlen(const xmlChar *str) {
+    size_t len;
+
     if (str == NULL)
         return(0);
-    return(strlen((const char *)str));
+    len = strlen((const char *)str);
+    if (len >= INT_MAX)
+        return(INT_MAX);
+    return((int)len);
 }
 
 /**
@@ -760,7 +765,7 @@ xmlUTF8Charcmp(const xmlChar *utf1, const xmlChar *utf2) {
  */
 int
 xmlUTF8Strlen(const xmlChar *utf) {
-    size_t ret = 0;
+    int ret = 0;
 
     if (utf == NULL)
         return(-1);

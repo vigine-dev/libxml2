@@ -81,7 +81,7 @@ XMLPUBFUN int
                 xmlStrQEqual             (const xmlChar *pref,
                                          const xmlChar *name,
                                          const xmlChar *str);
-XMLPUBFUN size_t
+XMLPUBFUN int
                 xmlStrlen                (const xmlChar *str);
 XMLPUBFUN xmlChar *
                 xmlStrcat                (xmlChar *cur,
