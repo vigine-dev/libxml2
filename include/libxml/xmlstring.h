@@ -16,6 +16,7 @@
 
 #include <stdarg.h>
 #include <libxml/xmlversion.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,16 +41,16 @@ XMLPUBFUN xmlChar *
                 xmlStrdup                (const xmlChar *cur);
 XMLPUBFUN xmlChar *
                 xmlStrndup               (const xmlChar *cur,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN xmlChar *
                 xmlCharStrndup           (const char *cur,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN xmlChar *
                 xmlCharStrdup            (const char *cur);
 XMLPUBFUN xmlChar *
                 xmlStrsub                (const xmlChar *str,
                                          int start,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN const xmlChar *
                 xmlStrchr                (const xmlChar *str,
                                          xmlChar val);
@@ -65,14 +66,14 @@ XMLPUBFUN int
 XMLPUBFUN int
                 xmlStrncmp               (const xmlChar *str1,
                                          const xmlChar *str2,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN int
                 xmlStrcasecmp            (const xmlChar *str1,
                                          const xmlChar *str2);
 XMLPUBFUN int
                 xmlStrncasecmp           (const xmlChar *str1,
                                          const xmlChar *str2,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN int
                 xmlStrEqual              (const xmlChar *str1,
                                          const xmlChar *str2);
@@ -88,19 +89,19 @@ XMLPUBFUN xmlChar *
 XMLPUBFUN xmlChar *
                 xmlStrncat               (xmlChar *cur,
                                          const xmlChar *add,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN xmlChar *
                 xmlStrncatNew            (const xmlChar *str1,
                                          const xmlChar *str2,
                                          int len);
 XMLPUBFUN int
                 xmlStrPrintf             (xmlChar *buf,
-                                         int len,
+                                         size_t len,
                                          const char *msg,
                                          ...) LIBXML_ATTR_FORMAT(3,4);
 XMLPUBFUN int
                 xmlStrVPrintf                (xmlChar *buf,
-                                         int len,
+                                         size_t len,
                                          const char *msg,
                                          va_list ap) LIBXML_ATTR_FORMAT(3,0);
 
@@ -111,10 +112,10 @@ XMLPUBFUN int
         xmlCheckUTF8                     (const unsigned char *utf);
 XMLPUBFUN int
         xmlUTF8Strsize                   (const xmlChar *utf,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN xmlChar *
         xmlUTF8Strndup                   (const xmlChar *utf,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN const xmlChar *
         xmlUTF8Strpos                    (const xmlChar *utf,
                                          int pos);
@@ -124,7 +125,7 @@ XMLPUBFUN int
 XMLPUBFUN xmlChar *
         xmlUTF8Strsub                    (const xmlChar *utf,
                                          int start,
-                                         int len);
+                                         size_t len);
 XMLPUBFUN int
         xmlUTF8Strlen                    (const xmlChar *utf);
 XMLPUBFUN int

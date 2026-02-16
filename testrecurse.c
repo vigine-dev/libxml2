@@ -578,9 +578,9 @@ notRecursiveHugeTest(const char *filename ATTRIBUTE_UNUSED,
         xmlEntityPtr ent;
         unsigned long fixed_cost = 20;
         unsigned long allowed_expansion = 1000000;
-        unsigned long f_size = xmlStrlen(BAD_CAST "some internal data");
-        unsigned long e_size;
-        unsigned long d_size;
+        size_t f_size = xmlStrlen(BAD_CAST "some internal data");
+        size_t e_size;
+        size_t d_size;
         unsigned long total_size;
 
         ent = xmlGetDocEntity(doc, BAD_CAST "e");
@@ -588,14 +588,14 @@ notRecursiveHugeTest(const char *filename ATTRIBUTE_UNUSED,
                  xmlStrlen(BAD_CAST "&f;") * 2 +
                  fixed_cost * 2;
         if (ent->expandedSize != e_size) {
-            fprintf(stderr, "Wrong size for entity e: %lu (expected %lu)\n",
+            fprintf(stderr, "Wrong size for entity e: %lu (expected %zu)\n",
                     ent->expandedSize, e_size);
             res = 1;
         }
 
         ent = xmlGetDocEntity(doc, BAD_CAST "b");
         if (ent->expandedSize != e_size) {
-            fprintf(stderr, "Wrong size for entity b: %lu (expected %lu)\n",
+            fprintf(stderr, "Wrong size for entity b: %lu (expected %zu)\n",
                     ent->expandedSize, e_size);
             res = 1;
         }
@@ -605,14 +605,14 @@ notRecursiveHugeTest(const char *filename ATTRIBUTE_UNUSED,
                  xmlStrlen(BAD_CAST "&e;") * 2 +
                  fixed_cost * 2;
         if (ent->expandedSize != d_size) {
-            fprintf(stderr, "Wrong size for entity d: %lu (expected %lu)\n",
+            fprintf(stderr, "Wrong size for entity d: %lu (expected %zu)\n",
                     ent->expandedSize, d_size);
             res = 1;
         }
 
         ent = xmlGetDocEntity(doc, BAD_CAST "c");
         if (ent->expandedSize != d_size) {
-            fprintf(stderr, "Wrong size for entity c: %lu (expected %lu)\n",
+            fprintf(stderr, "Wrong size for entity c: %lu (expected %zu)\n",
                     ent->expandedSize, d_size);
             res = 1;
         }
@@ -678,7 +678,7 @@ hugeDtdTest(const char *filename ATTRIBUTE_UNUSED,
     } else {
         unsigned long fixed_cost = 20;
         unsigned long allowed_expansion = 1000000;
-        unsigned long a_size = xmlStrlen(BAD_CAST "<!-- comment -->");
+        size_t a_size = xmlStrlen(BAD_CAST "<!-- comment -->");
         unsigned long b_size;
         unsigned long c_size;
         unsigned long e_size;

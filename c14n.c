@@ -988,7 +988,7 @@ xmlC14NFixupBaseAttr(xmlC14NCtxPtr ctx, xmlAttrPtr xml_base_attr)
     xmlAttrPtr attr;
     xmlChar * tmp_str;
     xmlChar * tmp_str2;
-    int tmp_str_len;
+    size_t tmp_str_len;
 
     if ((ctx == NULL) || (xml_base_attr == NULL) || (xml_base_attr->parent == NULL)) {
         xmlC14NErrParam(ctx);
