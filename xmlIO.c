@@ -700,7 +700,7 @@ xmlConvertUriToPath(const char *uri, char **out) {
 
 #ifdef LIBXML_WINPATH_ENABLED
     /* Ignore slash like in file:///C:/file.txt */
-    if (escaped[0] == '/') {
+    if (xmlWinPathEnabled && escaped[0] == '/') {
         ch = escaped[1];
         if (((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
             && escaped[2] == ':')
@@ -2725,7 +2725,7 @@ xmlParserGetDirectory(const char *filename) {
     if (filename == NULL) return(NULL);
 
 #if defined(LIBXML_WINPATH_ENABLED)
-#   define IS_XMLPGD_SEP(ch) ((ch=='/')||(ch=='\\'))
+#   define IS_XMLPGD_SEP(ch) ((ch=='/') || (xmlWinPathEnabled && (ch=='\\')))
 #else
 #   define IS_XMLPGD_SEP(ch) (ch=='/')
 #endif

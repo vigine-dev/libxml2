@@ -99,6 +99,17 @@ XMLPUBFUN xmlChar*
 XMLPUBFUN xmlChar*
 		xmlPathToURI		(const xmlChar *path);
 
+#ifdef LIBXML_WINPATH_ENABLED
+XMLPUBFUN void
+		xmlSetWinPathEnabled	(int v);
+
+/**
+ * Global setting to enable Windows path handling.
+ * Defaults to 1 on Windows, 0 on other platforms.
+ */
+XMLPUBVAR int xmlWinPathEnabled;
+#endif
+
 #ifdef __cplusplus
 }
 #endif

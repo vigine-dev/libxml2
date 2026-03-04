@@ -3592,6 +3592,93 @@ uriPathTest(const char *filename ATTRIBUTE_UNUSED,
     return(failures);
 }
 
+#ifdef LIBXML_WINPATH_ENABLED
+/**
+ * Test that xmlSetWinPathEnabled controls backslash path separator handling.
+ *
+ * @returns 0 in case of success, an error code otherwise
+ */
+static int
+winpathTest(const char *filename ATTRIBUTE_UNUSED,
+            const char *result ATTRIBUTE_UNUSED,
+            const char *err ATTRIBUTE_UNUSED,
+            int options ATTRIBUTE_UNUSED) {
+    int failures = 0;
+    int saved = xmlWinPathEnabled;
+    xmlChar *res;
+
+    /* With Win path enabled, backslash is a path separator */
+    xmlSetWinPathEnabled(1);
+
+    res = xmlBuildURI(BAD_CAST "bar", BAD_CAST "dir\\base");
+    if (res == NULL || xmlStrcmp(res, BAD_CAST "dir/bar") != 0) {
+        fprintf(stderr, "winpathTest: xmlBuildURI(\"bar\", \"dir\\\\base\") "
+                "with Win=1: expected \"dir/bar\", got \"%s\"\n",
+                res ? (char *) res : "(null)");
+        failures++;
+    }
+    xmlFree(res);
+    nb_tests++;
+
+    res = xmlBuildURI(BAD_CAST "bar", BAD_CAST "a\\b\\..\\c\\base");
+    if (res == NULL || xmlStrcmp(res, BAD_CAST "a/c/bar") != 0) {
+        fprintf(stderr, "winpathTest: xmlBuildURI(\"bar\", \"a\\\\b\\\\..\\\\c\\\\base\") "
+                "with Win=1: expected \"a/c/bar\", got \"%s\"\n",
+                res ? (char *) res : "(null)");
+        failures++;
+    }
+    xmlFree(res);
+    nb_tests++;
+
+    res = xmlBuildRelativeURI(BAD_CAST "dir\\file.xml", BAD_CAST "dir\\base.xml");
+    if (res == NULL || xmlStrcmp(res, BAD_CAST "file.xml") != 0) {
+        fprintf(stderr, "winpathTest: xmlBuildRelativeURI(\"dir\\\\file.xml\", "
+                "\"dir\\\\base.xml\") with Win=1: expected \"file.xml\", got \"%s\"\n",
+                res ? (char *) res : "(null)");
+        failures++;
+    }
+    xmlFree(res);
+    nb_tests++;
+
+    /* With Win path disabled, backslash is not a path separator */
+    xmlSetWinPathEnabled(0);
+
+    res = xmlBuildURI(BAD_CAST "bar", BAD_CAST "dir\\base");
+    if (res == NULL || xmlStrcmp(res, BAD_CAST "bar") != 0) {
+        fprintf(stderr, "winpathTest: xmlBuildURI(\"bar\", \"dir\\\\base\") "
+                "with Win=0: expected \"bar\", got \"%s\"\n",
+                res ? (char *) res : "(null)");
+        failures++;
+    }
+    xmlFree(res);
+    nb_tests++;
+
+    res = xmlBuildURI(BAD_CAST "bar", BAD_CAST "a\\b\\..\\c\\base");
+    if (res == NULL || xmlStrcmp(res, BAD_CAST "bar") != 0) {
+        fprintf(stderr, "winpathTest: xmlBuildURI(\"bar\", \"a\\\\b\\\\..\\\\c\\\\base\") "
+                "with Win=0: expected \"bar\", got \"%s\"\n",
+                res ? (char *) res : "(null)");
+        failures++;
+    }
+    xmlFree(res);
+    nb_tests++;
+
+    res = xmlBuildRelativeURI(BAD_CAST "dir\\file.xml", BAD_CAST "dir\\base.xml");
+    if (res == NULL || xmlStrcmp(res, BAD_CAST "dir%5Cfile.xml") != 0) {
+        fprintf(stderr, "winpathTest: xmlBuildRelativeURI(\"dir\\\\file.xml\", "
+                "\"dir\\\\base.xml\") with Win=0: expected \"dir%%5Cfile.xml\", "
+                "got \"%s\"\n",
+                res ? (char *) res : "(null)");
+        failures++;
+    }
+    xmlFree(res);
+    nb_tests++;
+
+    xmlSetWinPathEnabled(saved);
+    return(failures);
+}
+#endif /* LIBXML_WINPATH_ENABLED */
+
 /************************************************************************
  *									*
  *			Schemas tests					*
@@ -5488,6 +5575,11 @@ testDesc testDescriptions[] = {
     { "Path URI conversion tests" ,
       uriPathTest, NULL, NULL, NULL, NULL,
       0 },
+#ifdef LIBXML_WINPATH_ENABLED
+    { "Windows path handling tests" ,
+      winpathTest, NULL, NULL, NULL, NULL,
+      0 },
+#endif
 #ifdef LIBXML_SCHEMAS_ENABLED
     { "Schemas regression tests" ,
       schemasTest, "./test/schemas/*_*.xsd", NULL, NULL, NULL,
