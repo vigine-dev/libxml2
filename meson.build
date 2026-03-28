@@ -500,53 +500,52 @@ if want_catalog and want_output
     )
 endif
 
-## testdso module
-
-testdso_mod = shared_module(
-    'testdso',
-    files('testdso.c'),
-    build_rpath: get_option('libdir'),
-    include_directories: config_dir,
-    name_prefix: '',
-)
-
 ## tests
 
-checks = {
-    'runsuite': [],
-    'runtest': [threads_dep, zlib_dep],
-    'runxmlconf': [],
-# Disabled for now, see #694
-#    'testModule': [],
-    'testapi': [],
-    'testcatalog': [],
-    'testchar': [],
-    'testdict': [],
-    'testlimits': [],
-    'testparser': [],
-    'testrecurse': [],
-}
+if not get_option('tests').disabled()
+  testdso_mod = shared_module(
+      'testdso',
+      files('testdso.c'),
+      build_rpath: get_option('libdir'),
+      include_directories: config_dir,
+      name_prefix: '',
+  )
+  checks = {
+      'runsuite': [],
+      'runtest': [threads_dep, zlib_dep],
+      'runxmlconf': [],
+  # Disabled for now, see #694
+  #    'testModule': [],
+      'testapi': [],
+      'testcatalog': [],
+      'testchar': [],
+      'testdict': [],
+      'testlimits': [],
+      'testparser': [],
+      'testrecurse': [],
+  }
 
-foreach check, deps : checks
-    exe = executable(
-        check,
-        files(check + '.c'),
-        dependencies: [deps, xml_dep],
-        include_directories: config_dir,
+  foreach check, deps : checks
+      exe = executable(
+          check,
+          files(check + '.c'),
+          dependencies: [deps, xml_dep],
+          include_directories: config_dir,
+      )
+      if check != 'testlimits'
+          test(check, exe, timeout: 0, workdir: meson.current_source_dir())
+      endif
+  endforeach
+
+    add_test_setup(
+    'valgrind',
+    exe_wrapper: [
+        'valgrind', '--quiet', '--leak-check=full', '--error-exitcode=1',
+    ],
+    # default timeout in meson is 30s
+    timeout_multiplier: 4,
     )
-    if check != 'testlimits'
-        test(check, exe, timeout: 0, workdir: meson.current_source_dir())
-    endif
-endforeach
-
-add_test_setup(
-  'valgrind',
-  exe_wrapper: [
-    'valgrind', '--quiet', '--leak-check=full', '--error-exitcode=1',
-  ],
-  # default timeout in meson is 30s
-  timeout_multiplier: 4,
-)
+endif
 
 if want_output
     sh = find_program('sh', required: false)
