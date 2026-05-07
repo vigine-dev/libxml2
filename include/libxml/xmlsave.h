@@ -127,6 +127,9 @@ XMLPUBFUN xmlParserErrors
 XMLPUBFUN int
 		xmlSaveSetIndentString	(xmlSaveCtxt *ctxt,
 					 const char *indent);
+XMLPUBFUN int
+		xmlSaveSetIndentLevel	(xmlSaveCtxt *ctxt,
+					 int level);
 XML_DEPRECATED
 XMLPUBFUN int
 		xmlSaveSetEscape	(xmlSaveCtxt *ctxt,

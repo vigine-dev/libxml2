@@ -788,6 +788,7 @@ main(int argc ATTRIBUTE_UNUSED, char **argv ATTRIBUTE_UNUSED) {
     xmlSaveSetAttrEscape(NULL, 0);
     xmlSaveSetEscape(NULL, 0);
     xmlSaveSetIndentString(NULL, NULL);
+    xmlSaveSetIndentLevel(NULL, 0);
     xmlSaveClose(xmlSaveToBuffer(NULL, NULL, 0));
     xmlSaveClose(xmlSaveToFd(0, NULL, 0));
     xmlSaveClose(xmlSaveToFilename(NULL, NULL, 0));

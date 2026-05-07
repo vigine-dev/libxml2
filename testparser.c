@@ -543,6 +543,39 @@ testDocDumpFormatMemoryEnc(void) {
     xmlFreeDoc(doc);
     return err;
 }
+
+static int
+testSaveSetIndent(void) {
+    const char *xml = "<doc><a>testA</a><b>testB</b></doc>";
+    const char *expect = "<doc>\niiii<a>testA</a>\niiii<b>testB</b>\nii</doc>";
+    xmlDocPtr doc;
+    const xmlChar *text;
+    xmlBufferPtr buffer;
+    xmlSaveCtxtPtr save;
+    xmlNodePtr cur;
+    int err = 0;
+
+    doc = xmlReadDoc(BAD_CAST xml, NULL, NULL, 0);
+
+    buffer = xmlBufferCreate();
+    save = xmlSaveToBuffer(buffer, "UTF-8", XML_SAVE_FORMAT | XML_SAVE_AS_XML | XML_SAVE_INDENT);
+    xmlSaveSetIndentString(save, "ii");
+    xmlSaveSetIndentLevel(save, 1);
+    for (cur = xmlDocGetRootElement(doc); cur != NULL; cur = cur->next)
+        xmlSaveTree(save, cur);
+    xmlSaveClose(save);
+
+    text = xmlBufferContent(buffer);
+
+    if (strcmp((char *) text, expect) != 0) {
+        fprintf(stderr, "testSaveSetIndent failed\n");
+        err = 1;
+    }
+
+    xmlBufferFree(buffer);
+    xmlFreeDoc(doc);
+    return err;
+}
 #endif /* LIBXML_OUTPUT_ENABLED */
 
 #ifdef LIBXML_SAX1_ENABLED
@@ -1810,6 +1843,7 @@ main(void) {
     err |= testNoBlanks();
     err |= testSaveNullEnc();
     err |= testDocDumpFormatMemoryEnc();
+    err |= testSaveSetIndent();
 #endif
 #ifdef LIBXML_SAX1_ENABLED
     err |= testBalancedChunk();
