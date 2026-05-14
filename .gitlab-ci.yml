@@ -90,6 +90,25 @@ clang:msan:
     CFLAGS: "-O2 -g -fno-omit-frame-pointer -fsanitize=memory"
     MSAN_SYMBOLIZER_PATH: "$CI_PROJECT_DIR/.gitlab-ci/llvm-symbolizer"
 
+fil-c:
+  extends: .test
+  before_script:
+    - rm -rf libxml2-build
+    - mkdir libxml2-build
+    - ln -s /tests/xmlconf .
+    - apt install patchelf
+    - pushd /opt
+    - curl -L -o filc.tar.xz https://github.com/pizlonator/fil-c/releases/download/v0.677/filc-0.677-linux-x86_64.tar.xz
+    - tar xJvf filc.tar.xz
+    - pushd filc-0.677-linux-x86_64
+    - ./setup.sh
+    - popd
+    - popd
+  variables:
+    CC: /opt/filc-0.677-linux-x86_64/build/bin/filcc
+    CONFIG: "--without-python --without-zlib"
+    CFLAGS: "-O2 -g"
+
 .mingw:
   tags:
     - win32-ps
