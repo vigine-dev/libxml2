@@ -528,10 +528,7 @@ xmlBufFromBuffer(xmlBuffer *buffer) {
     } else {
         ret->size = buffer->size - 1;
         ret->content = buffer->content;
-        if (buffer->alloc == XML_BUFFER_ALLOC_IO)
-            ret->mem = buffer->contentIO;
-        else
-            ret->mem = buffer->content;
+        ret->mem = buffer->contentIO;
     }
 
     return(ret);
@@ -570,7 +567,6 @@ xmlBufBackToBuffer(xmlBuf *buf, xmlBuffer *ret) {
     } else {
         ret->size = buf->size + 1;
     }
-    ret->alloc = XML_BUFFER_ALLOC_IO;
     ret->content = buf->content;
     ret->contentIO = buf->mem;
     xmlFree(buf);
@@ -621,29 +617,6 @@ xmlBufUpdateInput(xmlBuf *buf, xmlParserInput *input, size_t pos) {
  ************************************************************************/
 
 /**
- * Set the buffer allocation scheme.
- *
- * @deprecated No-op, allocation schemes were removed.
- *
- * @param scheme  allocation method to use
- */
-void
-xmlSetBufferAllocationScheme(xmlBufferAllocationScheme scheme ATTRIBUTE_UNUSED) {
-}
-
-/**
- * Get the buffer allocation scheme.
- *
- * @deprecated Allocation schemes were removed.
- *
- * @returns  the current allocation scheme
- */
-xmlBufferAllocationScheme
-xmlGetBufferAllocationScheme(void) {
-    return(XML_BUFFER_ALLOC_EXACT);
-}
-
-/**
  * Create a buffer.
  *
  * The default initial size is 256.
@@ -660,7 +633,6 @@ xmlBufferCreate(void) {
 
     ret->use = 0;
     ret->size = 256;
-    ret->alloc = XML_BUFFER_ALLOC_IO;
     ret->contentIO = xmlMalloc(ret->size);
     if (ret->contentIO == NULL) {
 	xmlFree(ret);
@@ -690,7 +662,6 @@ xmlBufferCreateSize(size_t size) {
         return(NULL);
 
     ret->use = 0;
-    ret->alloc = XML_BUFFER_ALLOC_IO;
     ret->size = (size ? size + 1 : 0);         /* +1 for ending null */
 
     if (ret->size) {
@@ -727,8 +698,7 @@ xmlBufferDetach(xmlBuffer *buf) {
     if (buf == NULL)
         return(NULL);
 
-    if ((buf->alloc == XML_BUFFER_ALLOC_IO) &&
-        (buf->content != buf->contentIO)) {
+    if ((buf->content != buf->contentIO)) {
         ret = xmlStrndup(buf->content, buf->use);
         xmlFree(buf->contentIO);
     } else {
@@ -791,10 +761,7 @@ xmlBufferFree(xmlBuffer *buf) {
     if (buf == NULL)
 	return;
 
-    if (buf->alloc == XML_BUFFER_ALLOC_IO)
-        xmlFree(buf->contentIO);
-    else
-        xmlFree(buf->content);
+    xmlFree(buf->contentIO);
 
     xmlFree(buf);
 }
@@ -813,13 +780,9 @@ xmlBufferEmpty(xmlBuffer *buf) {
 
     buf->use = 0;
 
-    if (buf->alloc == XML_BUFFER_ALLOC_IO) {
-	buf->size += buf->content - buf->contentIO;
-        buf->content = buf->contentIO;
-        buf->content[0] = 0;
-    } else {
-        buf->content[0] = 0;
-    }
+    buf->size += buf->content - buf->contentIO;
+    buf->content = buf->contentIO;
+    buf->content[0] = 0;
 }
 
 /**
@@ -842,12 +805,8 @@ xmlBufferShrink(xmlBuffer *buf, unsigned int len) {
 
     buf->use -= len;
 
-    if (buf->alloc == XML_BUFFER_ALLOC_IO) {
-        buf->content += len;
-	buf->size -= len;
-    } else {
-	memmove(buf->content, &buf->content[len], buf->use + 1);
-    }
+    buf->content += len;
+    buf->size -= len;
 
     return(len);
 }
@@ -885,8 +844,7 @@ xmlBufferGrow(xmlBuffer *buf, unsigned int len) {
             size += 100;
     }
 
-    if ((buf->alloc == XML_BUFFER_ALLOC_IO) &&
-        (buf->content != buf->contentIO)) {
+    if ((buf->content != buf->contentIO)) {
         newbuf = xmlMalloc(size);
         if (newbuf == NULL)
             return(-1);
@@ -899,8 +857,7 @@ xmlBufferGrow(xmlBuffer *buf, unsigned int len) {
             return(-1);
     }
 
-    if (buf->alloc == XML_BUFFER_ALLOC_IO)
-        buf->contentIO = newbuf;
+    buf->contentIO = newbuf;
     buf->content = newbuf;
     buf->size = size;
 
@@ -1033,27 +990,25 @@ xmlBufferAddHead(xmlBuffer *buf, const xmlChar *str, int len) {
     if (len == 0)
         return(XML_ERR_OK);
 
-    if (buf->alloc == XML_BUFFER_ALLOC_IO) {
-        start = buf->content - buf->contentIO;
+    start = buf->content - buf->contentIO;
 
-        /*
-         * We can add it in the space previously shrunk
-         */
-        if ((unsigned) len <= start) {
-            buf->content -= len;
-            memmove(&buf->content[0], str, len);
-            buf->use += len;
-            buf->size += len;
-            return(0);
-        }
-        if ((unsigned) len < buf->size + start - buf->use) {
-            memmove(&buf->contentIO[len], buf->content, buf->use + 1);
-            memmove(buf->contentIO, str, len);
-            buf->content = buf->contentIO;
-            buf->use += len;
-            buf->size += start;
-            return(0);
-        }
+    /*
+        * We can add it in the space previously shrunk
+        */
+    if ((unsigned) len <= start) {
+        buf->content -= len;
+        memmove(&buf->content[0], str, len);
+        buf->use += len;
+        buf->size += len;
+        return(0);
+    }
+    if ((unsigned) len < buf->size + start - buf->use) {
+        memmove(&buf->contentIO[len], buf->content, buf->use + 1);
+        memmove(buf->contentIO, str, len);
+        buf->content = buf->contentIO;
+        buf->use += len;
+        buf->size += start;
+        return(0);
     }
 
     if ((unsigned) len >= buf->size - buf->use) {

@@ -78,7 +78,6 @@ main(int argc ATTRIBUTE_UNUSED, char **argv ATTRIBUTE_UNUSED) {
     xmlBufferGrow(NULL, 0);
     xmlBufferLength(NULL);
     xmlBufferResize(NULL, 0);
-    xmlBufferSetAllocationScheme(NULL, 0);
     xmlBufferShrink(NULL, 0);
     xmlBufferWriteCHAR(NULL, NULL);
     xmlBufferWriteChar(NULL, NULL);
@@ -244,7 +243,6 @@ main(int argc ATTRIBUTE_UNUSED, char **argv ATTRIBUTE_UNUSED) {
     xmlFreeURI(NULL);
     xmlGcMemGet(NULL, NULL, NULL, NULL, NULL);
     xmlGcMemSetup(0, 0, 0, 0, 0);
-    xmlGetBufferAllocationScheme();
     xmlGetCharEncodingHandler(0);
     xmlGetCharEncodingName(0);
     xmlGetCompressMode();
@@ -531,7 +529,6 @@ main(int argc ATTRIBUTE_UNUSED, char **argv ATTRIBUTE_UNUSED) {
     xmlFree(xmlSaveUri(NULL));
     xmlFreeNs(xmlSearchNs(NULL, NULL, NULL));
     xmlFreeNs(xmlSearchNsByHref(NULL, NULL, NULL));
-    xmlSetBufferAllocationScheme(0);
     xmlSetCompressMode(0);
     xmlSetDocCompressMode(NULL, 0);
     xmlSetExternalEntityLoader(0);
