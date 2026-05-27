@@ -16,9 +16,19 @@ v_min = v_array[1].to_int()
 v_mic = v_array[2].to_int()
 v_nbr = v_maj * 10000 + v_min * 100 + v_mic
 v_extra = ''
-r = run_command('git', 'describe', check: false)
-if (r.returncode() == 0)
-    v_extra = '-GIT' + r.stdout().strip()
+
+# git checkout
+fs = import('fs')
+if fs.is_dir(meson.current_source_dir() / '.git')
+    git = find_program('git', required: false)
+    if git.found()
+        r = run_command('git', 'describe', check: false)
+        if (r.returncode() == 0)
+            v_extra = '-GIT' + r.stdout().strip()
+        endif
+    else
+        message('This appears to be a git checkout but executable is missing, repository data will not be available')
+    endif
 endif
 
 # install paths
