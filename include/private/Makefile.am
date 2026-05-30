@@ -11,6 +11,7 @@ EXTRA_DIST = \
 	lint.h \
 	memory.h \
 	parser.h \
+	uri.h \
 	regexp.h \
 	save.h \
 	string.h \

@@ -23,6 +23,7 @@
 #include <libxml/xmlerror.h>
 #include <libxml/xmlIO.h>
 #include <libxml/uri.h>
+#include "private/uri.h"
 #include <libxml/valid.h>
 #include <libxml/HTMLtree.h>
 
@@ -414,8 +415,8 @@ xmlSAX2ResolveEntity(void *ctx, const xmlChar *publicId,
         if (base == NULL)
             base = BAD_CAST ctxt->directory;
 
-        if ((xmlStrlen(systemId) > XML_MAX_URI_LENGTH) ||
-            (xmlStrlen(base) > XML_MAX_URI_LENGTH)) {
+        if ((xmlIsUriTooLong(systemId, XML_MAX_URI_LENGTH)) ||
+            (xmlIsUriTooLong(base, XML_MAX_URI_LENGTH))) {
             xmlFatalErr(ctxt, XML_ERR_RESOURCE_LIMIT, "URI too long");
             return(NULL);
         }
@@ -428,7 +429,7 @@ xmlSAX2ResolveEntity(void *ctx, const xmlChar *publicId,
                            "Can't resolve URI: %s\n", systemId);
             return(NULL);
         }
-        if (xmlStrlen(URI) > XML_MAX_URI_LENGTH) {
+        if (xmlIsUriTooLong(URI, XML_MAX_URI_LENGTH)) {
             xmlFatalErr(ctxt, XML_ERR_RESOURCE_LIMIT, "URI too long");
             xmlFree(URI);
             return(NULL);
@@ -590,7 +591,7 @@ xmlSAX2EntityDecl(void *ctx, const xmlChar *name, int type,
                 xmlWarnMsg(ctxt, XML_ERR_INVALID_URI,
                            "Can't resolve URI: %s\n", systemId);
             }
-        } else if (xmlStrlen(URI) > XML_MAX_URI_LENGTH) {
+        } else if (xmlIsUriTooLong(URI, XML_MAX_URI_LENGTH)) {
             xmlFatalErr(ctxt, XML_ERR_RESOURCE_LIMIT, "URI too long");
             xmlFree(URI);
         } else {

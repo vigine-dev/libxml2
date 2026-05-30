@@ -16,6 +16,7 @@
 
 #include <libxml/xmlmemory.h>
 #include <libxml/uri.h>
+#include "private/uri.h"
 #include <libxml/xmlerror.h>
 
 #include "private/error.h"
@@ -2780,4 +2781,28 @@ xmlChar *
 xmlPathToURI(const xmlChar *path)
 {
     return(xmlCanonicPath(path));
+}
+
+/**
+ * xmlIsUriTooLong:
+ *
+ * Check if a URI is too long or causes integer overflow.
+ *
+ * @param uri the URI string
+ * @param max_uri_length the maximum allowed length
+ * @return 1 if too long, 0 otherwise
+ */
+int
+xmlIsUriTooLong(const xmlChar *uri, const int max_uri_length) {
+    int len;
+    
+    if (uri == NULL) return(0);
+    if (*uri == 0) return(0);
+    
+    len = xmlStrlen(uri);
+    
+    /* Catch Nick's 2022 overflow design where xmlStrlen returns 0 */
+    if (len == 0) return(1);
+    
+    return (len > max_uri_length);
 }
