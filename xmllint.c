@@ -3157,6 +3157,7 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
 #endif /* LIBXML_READER_ENABLED */
 	) {
 	xmlRelaxNGParserCtxtPtr ctxt;
+        FILE* relngdump = stderr;
 
         /* forces loading the DTDs */
 	lint->parseOptions |= XML_PARSE_DTDLOAD;
@@ -3170,6 +3171,16 @@ xmllintMain(int argc, const char **argv, FILE *errStream,
         }
         xmlRelaxNGSetResourceLoader(ctxt, xmllintResourceLoader, lint);
 	lint->relaxngschemas = xmlRelaxNGParse(ctxt);
+#ifdef LIBXML_DEBUG_ENABLED
+        if (lint->appOptions & XML_LINT_DEBUG_ENABLED) {
+            /*
+             * Dump the simplified Relax-NG schema to a file for debugging purposes.
+             * For example TEI based schemas can get quite large.
+            relngdump = fopen("relngdump.rng", "w+");*/
+            xmlRelaxNGDump(relngdump, lint->relaxngschemas);
+            /*fclose(relngdump);*/
+        }
+#endif /* LIBXML_DEBUG_ENABLED */
 	xmlRelaxNGFreeParserCtxt(ctxt);
 	if (lint->relaxngschemas == NULL) {
 	    fprintf(errStream, "Relax-NG schema %s failed to compile\n",
