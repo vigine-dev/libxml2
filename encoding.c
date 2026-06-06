@@ -1896,6 +1896,7 @@ xmlCharEncInFunc(xmlCharEncodingHandler * handler, struct _xmlBuffer *out,
     int ret;
     int written;
     int toconv;
+    unsigned int grow;
 
     if (handler == NULL)
         return(XML_ENC_ERR_INTERNAL);
@@ -1904,12 +1905,22 @@ xmlCharEncInFunc(xmlCharEncodingHandler * handler, struct _xmlBuffer *out,
     if (in == NULL)
         return(XML_ENC_ERR_INTERNAL);
 
+    if ((in->use > INT_MAX) || (out->size > INT_MAX) ||
+        (out->use >= out->size))
+        return(XML_ENC_ERR_SPACE);
+
     toconv = in->use;
     if (toconv == 0)
         return (0);
     written = out->size - out->use -1; /* count '\0' */
-    if (toconv * 2 >= written) {
-        xmlBufferGrow(out, out->size + toconv * 2);
+    if ((toconv > INT_MAX / 2) || (toconv * 2 >= written)) {
+        if (toconv > (INT_MAX - (int) out->size) / 2)
+            return(XML_ENC_ERR_SPACE);
+        grow = out->size + toconv * 2;
+        if (xmlBufferGrow(out, grow) < 0)
+            return(XML_ENC_ERR_MEMORY);
+        if (out->use >= out->size)
+            return(XML_ENC_ERR_SPACE);
         written = out->size - out->use - 1;
     }
     ret = xmlEncInputChunk(handler, &out->content[out->use], &written,
@@ -2103,9 +2114,12 @@ xmlCharEncOutFunc(xmlCharEncodingHandler *handler, struct _xmlBuffer *out,
     int written;
     int writtentot = 0;
     int toconv;
+    unsigned int grow;
 
     if (handler == NULL) return(XML_ENC_ERR_INTERNAL);
     if (out == NULL) return(XML_ENC_ERR_INTERNAL);
+    if ((out->size > INT_MAX) || (out->use >= out->size))
+        return(XML_ENC_ERR_SPACE);
 
 retry:
 
@@ -2130,9 +2144,17 @@ retry:
     /*
      * Conversion itself.
      */
+    if (in->use > INT_MAX)
+        return(XML_ENC_ERR_SPACE);
     toconv = in->use;
-    if (toconv * 4 >= written) {
-        xmlBufferGrow(out, toconv * 4);
+    if ((toconv > INT_MAX / 4) || (toconv * 4 >= written)) {
+        if (toconv > INT_MAX / 4)
+            return(XML_ENC_ERR_SPACE);
+        grow = toconv * 4;
+        if (xmlBufferGrow(out, grow) < 0)
+            return(XML_ENC_ERR_MEMORY);
+        if (out->use >= out->size)
+            return(XML_ENC_ERR_SPACE);
 	written = out->size - out->use - 1;
     }
     ret = xmlEncOutputChunk(handler, &out->content[out->use], &written,
@@ -2165,7 +2187,10 @@ retry:
          */
         charrefLen = xmlSerializeDecCharRef((char *) charref, cur);
         xmlBufferShrink(in, len);
-        xmlBufferGrow(out, charrefLen * 4);
+        if (xmlBufferGrow(out, charrefLen * 4) < 0)
+            return(XML_ENC_ERR_MEMORY);
+        if (out->use >= out->size)
+            return(XML_ENC_ERR_SPACE);
         written = out->size - out->use - 1;
         toconv = charrefLen;
         ret = xmlEncOutputChunk(handler, &out->content[out->use], &written,
@@ -3000,4 +3025,3 @@ done:
     *inlen = in - instart;
     return(ret);
 }
-
