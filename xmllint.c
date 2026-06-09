@@ -1383,10 +1383,12 @@ static void processNode(xmllintState *lint, xmlTextReaderPtr reader) {
 }
 
 static void streamFile(xmllintState *lint, const char *filename) {
-    xmlParserInputBufferPtr input = NULL;
     FILE *errStream = lint->errStream;
-    xmlTextReaderPtr reader;
+    xmlTextReaderPtr reader = NULL;
     int ret;
+#ifdef LIBXML_ZLIB_ENABLED
+    gzFile gz = NULL;
+#endif
 
 #if HAVE_DECL_MMAP
     if (lint->appOptions & XML_LINT_MEMORY) {
@@ -1394,15 +1396,11 @@ static void streamFile(xmllintState *lint, const char *filename) {
                                     filename, NULL, lint->parseOptions);
         if (reader == NULL) {
             lint->progresult = XMLLINT_ERR_MEM;
-            return;
+            goto cleanup;
         }
     } else
 #endif
     {
-#ifdef LIBXML_ZLIB_ENABLED
-        gzFile gz;
-#endif
-
         xmlResetLastError();
 
 #ifdef LIBXML_ZLIB_ENABLED
@@ -1414,7 +1412,7 @@ static void streamFile(xmllintState *lint, const char *filename) {
         if (gz == NULL) {
             fprintf(lint->errStream, "Can't open %s\n", filename);
             lint->progresult = XMLLINT_ERR_RDFILE;
-            return;
+            goto cleanup;
         }
 
         reader = xmlReaderForIO(xmllintGzRead, xmllintGzClose, gz,
@@ -1437,7 +1435,7 @@ static void streamFile(xmllintState *lint, const char *filename) {
                 fprintf(errStream, "Unable to open %s\n", filename);
                 lint->progresult = XMLLINT_ERR_RDFILE;
             }
-            return;
+            goto cleanup;
         }
     }
 
@@ -1561,8 +1559,6 @@ static void streamFile(xmllintState *lint, const char *filename) {
     /*
      * Done, cleanup and status
      */
-    xmlFreeTextReader(reader);
-    xmlFreeParserInputBuffer(input);
     if (ret != 0) {
         fprintf(errStream, "%s : failed to parse\n", filename);
         lint->progresult = XMLLINT_ERR_UNCLASS;
@@ -1571,6 +1567,18 @@ static void streamFile(xmllintState *lint, const char *filename) {
     if (lint->patstream != NULL) {
 	xmlFreeStreamCtxt(lint->patstream);
 	lint->patstream = NULL;
+    }
+#endif
+
+cleanup:
+    if (reader != NULL) {
+        xmlFreeTextReader(reader);
+        reader = NULL;
+    }
+#ifdef LIBXML_ZLIB_ENABLED
+    if (gz != NULL) {
+        gzclose(gz);
+        gz = NULL;
     }
 #endif
 }
