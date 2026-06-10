@@ -21,6 +21,14 @@
 #include "private/error.h"
 #include "private/memory.h"
 
+#ifdef LIBXML_WINPATH_ENABLED
+#if defined(_WIN32) || defined(__CYGWIN__)
+int xmlWinPathEnabled = 1;
+#else
+int xmlWinPathEnabled = 0;
+#endif
+#endif
+
 /**
  * The definition of the URI regexp in the above RFC has no size limit
  * In practice they are usually relatively short except for the
@@ -233,7 +241,7 @@ xmlParse3986Scheme(xmlURIPtr uri, const char **str) {
     /*
      * Don't treat Windows drive letters as scheme.
      */
-    if (*cur == ':')
+    if (xmlWinPathEnabled && (*cur == ':'))
         return(1);
 #endif
 
@@ -584,7 +592,7 @@ xmlParse3986Segment(xmlURIPtr uri, const char **str, char forbid, int empty)
     /*
      * Allow Windows drive letters.
      */
-    if ((forbid == ':') && (*cur == forbid))
+    if (xmlWinPathEnabled && (forbid == ':') && (*cur == forbid))
         NEXT(cur);
 #endif
 
@@ -1438,7 +1446,7 @@ xmlIsPathSeparator(int c, int isFile) {
         return(1);
 
 #if defined(LIBXML_WINPATH_ENABLED)
-    if (isFile && (c == '\\'))
+    if (xmlWinPathEnabled && isFile && (c == '\\'))
         return(1);
 #endif
 
@@ -1479,7 +1487,7 @@ xmlNormalizePath(char *path, int isFile) {
         while (xmlIsPathSeparator(*cur, isFile)) {
 #if defined(LIBXML_WINPATH_ENABLED)
             /* Allow two separators at start of path */
-            if ((isFile) && (out == path + 1))
+            if (xmlWinPathEnabled && (isFile) && (out == path + 1))
                 *out++ = '/';
 #endif
             cur++;
@@ -1841,7 +1849,8 @@ xmlIsAbsolutePath(const xmlChar *path) {
         return(1);
 
 #if defined(LIBXML_WINPATH_ENABLED)
-    if ((((c >= 'A') && (c <= 'Z')) ||
+    if (xmlWinPathEnabled &&
+        (((c >= 'A') && (c <= 'Z')) ||
          ((c >= 'a') && (c <= 'z'))) &&
         (path[1] == ':'))
         return(1);
@@ -2029,7 +2038,7 @@ xmlBuildURISafe(const xmlChar *URI, const xmlChar *base, xmlChar **valPtr) {
      * Resolve paths with a Windows drive letter as filesystem path
      * even if base has a scheme.
      */
-    if ((ref != NULL) && (ref->path != NULL)) {
+    if (xmlWinPathEnabled && (ref != NULL) && (ref->path != NULL)) {
         int c = ref->path[0];
 
         if ((((c >= 'A') && (c <= 'Z')) ||
@@ -2371,55 +2380,55 @@ xmlParseUriOrPath(const char *str, xmlURIPtr *out, int *drive) {
 
         if (xmlIsAbsolutePath(BAD_CAST buf)) {
 #if defined(LIBXML_WINPATH_ENABLED)
-            const char *server = NULL;
-            int isFileScheme = 0;
-#endif
+            if (xmlWinPathEnabled) {
+                const char *server = NULL;
+                int isFileScheme = 0;
 
-#if defined(LIBXML_WINPATH_ENABLED)
-            if (strncmp(buf, "//?/UNC/", 8) == 0) {
-                server = buf + 8;
-                isFileScheme = 1;
-            } else if (strncmp(buf, "//?/", 4) == 0) {
-                path = buf + 3;
-                isFileScheme = 1;
-            } else if (strncmp(buf, "//", 2) == 0) {
-                server = buf + 2;
-                isFileScheme = 1;
-            }
-
-            if (server != NULL) {
-                const char *end = strchr(server, '/');
-
-                if (end == NULL) {
-                    uri->server = xmlMemStrdup(server);
-                    path = "/";
-                } else {
-                    uri->server = (char *) xmlStrndup(BAD_CAST server,
-                                                      end - server);
-                    path = end;
-                }
-                if (uri->server == NULL) {
-                    ret = -1;
-                    goto done;
-                }
-            }
-
-            if ((((path[0] >= 'A') && (path[0] <= 'Z')) ||
-                 ((path[0] >= 'a') && (path[0] <= 'z'))) &&
-                (path[1] == ':')) {
-                prependSlash = 1;
-                isFileScheme = 1;
-            }
-
-            if (isFileScheme) {
-                uri->scheme = xmlMemStrdup("file");
-                if (uri->scheme == NULL) {
-                    ret = -1;
-                    goto done;
+                if (strncmp(buf, "//?/UNC/", 8) == 0) {
+                    server = buf + 8;
+                    isFileScheme = 1;
+                } else if (strncmp(buf, "//?/", 4) == 0) {
+                    path = buf + 3;
+                    isFileScheme = 1;
+                } else if (strncmp(buf, "//", 2) == 0) {
+                    server = buf + 2;
+                    isFileScheme = 1;
                 }
 
-                if (uri->server == NULL)
-                    uri->port = PORT_EMPTY_SERVER;
+                if (server != NULL) {
+                    const char *end = strchr(server, '/');
+
+                    if (end == NULL) {
+                        uri->server = xmlMemStrdup(server);
+                        path = "/";
+                    } else {
+                        uri->server = (char *) xmlStrndup(BAD_CAST server,
+                                                          end - server);
+                        path = end;
+                    }
+                    if (uri->server == NULL) {
+                        ret = -1;
+                        goto done;
+                    }
+                }
+
+                if ((((path[0] >= 'A') && (path[0] <= 'Z')) ||
+                     ((path[0] >= 'a') && (path[0] <= 'z'))) &&
+                    (path[1] == ':')) {
+                    prependSlash = 1;
+                    isFileScheme = 1;
+                }
+
+                if (isFileScheme) {
+                    uri->scheme = xmlMemStrdup("file");
+                    if (uri->scheme == NULL) {
+                        ret = -1;
+                        goto done;
+                    }
+
+                    if (uri->server == NULL)
+                        uri->port = PORT_EMPTY_SERVER;
+                }
             }
 #endif
         }
@@ -2445,7 +2454,8 @@ xmlParseUriOrPath(const char *str, xmlURIPtr *out, int *drive) {
     }
 
 #if defined(LIBXML_WINPATH_ENABLED)
-    if ((uri->path[0] == '/') &&
+    if (xmlWinPathEnabled &&
+        (uri->path[0] == '/') &&
         (((uri->path[1] >= 'A') && (uri->path[1] <= 'Z')) ||
          ((uri->path[1] >= 'a') && (uri->path[1] <= 'z'))) &&
         (uri->path[2] == ':'))
@@ -2781,3 +2791,19 @@ xmlPathToURI(const xmlChar *path)
 {
     return(xmlCanonicPath(path));
 }
+
+#ifdef LIBXML_WINPATH_ENABLED
+/**
+ * Set the Windows path handling flag.
+ *
+ * This should be called during initialization, before the library
+ * is used by any thread.
+ *
+ * @param v  new value (0 = disabled, non-zero = enabled)
+ * @since 2.15.0
+ */
+void
+xmlSetWinPathEnabled(int v) {
+    xmlWinPathEnabled = v;
+}
+#endif
